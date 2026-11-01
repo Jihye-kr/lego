@@ -38,8 +38,8 @@
 **요구 사항**: Node.js 20 이상, [서울 열린데이터광장](https://data.seoul.go.kr) 지하철 실시간 도착 API 키
 
 ```bash
-git clone <저장소 URL>
-cd subway
+git clone https://github.com/Jihye-kr/lego.git
+cd lego
 npm install
 
 # API 키 설정 (서버에서만 사용, 클라이언트에 노출되지 않음)
