@@ -17,8 +17,11 @@
 ## 데모
 
 <div align="center">
-  <img src="docs/demo.gif" width="720" alt="LeGo 사용 데모" />
+  <img src="docs/demo.gif" width="720" alt="LeGo 소개 영상: 놓친 열차, 앱 설정, 출발 카운트다운, 3D 열차 도착" />
+  <p><a href="docs/lego-promo.mp4">🎬 소개 영상 원본 보기 (MP4, 31초)</a></p>
 </div>
+
+소개 영상은 실제 앱 화면을 녹화해 [HyperFrames](https://hyperframes.heygen.com)로 편집했습니다. 소스는 [videos/lego-promo/](videos/lego-promo/)에 있습니다.
 
 ## 사용법
 

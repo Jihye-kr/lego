@@ -1,0 +1,59 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Pretendard";
+      font-weight: 700;
+      src: url("assets/fonts/Pretendard-Bold.woff2") format("woff2");
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+    }
+    /* 한 번에 한 줄. 화면 아래 96px, 가로 전체 폭에서 가운데 정렬 */
+    .cap {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 96px;
+      text-align: center;
+      overflow: visible;
+    }
+    .cap span {
+      display: inline-block;
+      padding: 10px 22px 12px;
+      background: rgba(255, 255, 255, 0.94);
+      color: var(--color-ink, #171717);
+      font-family: "Pretendard", sans-serif;
+      font-weight: 700;
+      font-size: 42px;
+      line-height: 1.2;
+      letter-spacing: -0.02em;
+    }
+    .cap em {
+      font-style: normal;
+      color: var(--color-accent, #2563eb);
+    }
+  </style>
+  <div data-hf-id="hf-jn2k" id="root" data-composition-id="captions" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-s9rp" id="cap-1" class="cap clip" data-start="0.3" data-duration="3.3" data-track-index="0"><span data-hf-id="hf-4fsk">숨차게 뛰어 내려갔는데, 눈앞에서 문이 닫혔어요</span></div>
+    <div data-hf-id="hf-sfyc" id="cap-2" class="cap clip" data-start="4.2" data-duration="2.3" data-track-index="0"><span data-hf-id="hf-tcbg">딱 1분만 일찍 나왔더라면</span></div>
+    <div data-hf-id="hf-v15u" id="cap-3" class="cap clip" data-start="6.9" data-duration="2.5" data-track-index="0"><span data-hf-id="hf-fbjl">이제 LeGo에 타는 역만 알려주세요</span></div>
+    <div data-hf-id="hf-orc4" id="cap-4" class="cap clip" data-start="9.6" data-duration="2.2" data-track-index="0"><span data-hf-id="hf-h4qq">노선과 방향을 고르고</span></div>
+    <div data-hf-id="hf-wtgy" id="cap-5" class="cap clip" data-start="12.0" data-duration="2.0" data-track-index="0"><span data-hf-id="hf-l64z">승강장까지 몇 분인지만 넣으면</span></div>
+    <div data-hf-id="hf-0ocw" id="cap-6" class="cap clip" data-start="14.2" data-duration="4.4" data-track-index="0"><span data-hf-id="hf-bfoz">집을 나설 순간을 초 단위로 알려드려요</span></div>
+    <div data-hf-id="hf-3l6c" id="cap-7" class="cap clip" data-start="18.9" data-duration="2.0" data-track-index="0"><span data-hf-id="hf-f3uh"><em data-hf-id="hf-5taf">지금</em> 나서면, 여유 있게 탈 수 있어요</span></div>
+    <div data-hf-id="hf-3ggv" id="cap-8" class="cap clip" data-start="24.4" data-duration="2.0" data-track-index="0"><span data-hf-id="hf-x3dd">이번엔, 열린 문이 기다리고 있어요</span></div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    document.querySelectorAll("#root .cap").forEach((cap) => {
+      const start = parseFloat(cap.dataset.start);
+      const end = start + parseFloat(cap.dataset.duration);
+      const line = cap.querySelector("span");
+      tl.fromTo(line, { opacity: 0, filter: "blur(8px)" }, { opacity: 1, filter: "blur(0px)", duration: 0.18, ease: "power4.out" }, start);
+      tl.to(line, { opacity: 0, filter: "blur(8px)", duration: 0.15, ease: "power2.in" }, end - 0.15);
+      tl.set(line, { opacity: 0 }, end);
+    });
+    window.__timelines["captions"] = tl;
+  </script>
+</template>

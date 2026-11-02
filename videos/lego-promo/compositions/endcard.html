@@ -1,0 +1,107 @@
+<template>
+  <style>
+    @font-face {
+      font-family: "Pretendard";
+      font-weight: 600;
+      src: url("assets/fonts/Pretendard-SemiBold.woff2") format("woff2");
+    }
+    @font-face {
+      font-family: "Pretendard";
+      font-weight: 800;
+      src: url("assets/fonts/Pretendard-ExtraBold.woff2") format("woff2");
+    }
+    #root {
+      position: absolute;
+      inset: 0;
+      font-family: "Pretendard", sans-serif;
+    }
+    #end-ground {
+      position: absolute;
+      inset: 0;
+      background: var(--color-ground, #ffffff);
+    }
+    /* 로고 타일: 앞 장면의 3D 창이 줄어든 자리(645,376 / 168x168)와 같다 */
+    #end-tile {
+      position: absolute;
+      left: 645px;
+      top: 376px;
+      width: 168px;
+      height: 168px;
+      border-radius: 23%;
+      background: var(--color-accent, #2563eb);
+    }
+    #end-walker {
+      position: absolute;
+      left: 28px;
+      top: 28px;
+      width: 112px;
+      height: 112px;
+    }
+    #end-word {
+      position: absolute;
+      left: 849px;
+      top: 366px;
+      height: 188px;
+      font-size: 172px;
+      line-height: 188px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      color: #171717;
+    }
+    #end-word em {
+      font-style: normal;
+      color: var(--color-accent, #2563eb);
+    }
+    #end-tag {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 610px;
+      text-align: center;
+      font-size: 48px;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      color: #404040;
+    }
+    #end-url {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 694px;
+      text-align: center;
+      font-size: 34px;
+      font-weight: 600;
+      color: #525252;
+    }
+  </style>
+  <div data-hf-id="hf-32ii" id="root" data-composition-id="endcard" data-width="1920" data-height="1080">
+    <div data-hf-id="hf-fwzw" id="end-ground"></div>
+    <div data-hf-id="hf-gmzh" id="end-tile">
+      <svg data-hf-id="hf-2smo" id="end-walker" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+        <circle data-hf-id="hf-ksqa" cx="13.5" cy="4" r="2" fill="#FFFFFF" />
+        <path data-hf-id="hf-gtst" d="M13 8.5 11 14" />
+        <path data-hf-id="hf-vqow" d="M11 14 14.5 16.5 14 21" />
+        <path data-hf-id="hf-84e0" d="M11 14 8.5 20.5" />
+        <path data-hf-id="hf-jk90" d="M12.5 10 9.5 12.5" />
+        <path data-hf-id="hf-r2wp" d="M12.5 10 15.5 12.5" />
+      </svg>
+    </div>
+    <div data-hf-id="hf-oika" id="end-word">Le<em data-hf-id="hf-ue19">Go</em></div>
+    <div data-hf-id="hf-jdba" id="end-tag">언제 나갈지, LeGo가 알려줄게요</div>
+    <div data-hf-id="hf-ln9n" id="end-url">lego-jihye.vercel.app</div>
+  </div>
+  <script>
+    const tl = gsap.timeline({ paused: true });
+    // 걷는 사람이 타일 위에 선다
+    tl.fromTo("#end-walker", { opacity: 0, scale: 0.6, transformOrigin: "50% 60%" },
+      { opacity: 1, scale: 1, duration: 0.45, ease: "back.out(1.6)" }, 0.05);
+    // 워드마크는 타일 옆에서 왼쪽→오른쪽으로 닦아 낸다
+    tl.fromTo("#end-word", { clipPath: "inset(0% 100% 0% 0%)", x: -24 },
+      { clipPath: "inset(0% 0% 0% 0%)", x: 0, duration: 0.6, ease: "expo.out" }, 0.3);
+    tl.fromTo("#end-tag", { opacity: 0, filter: "blur(8px)" },
+      { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 0.9);
+    tl.fromTo("#end-url", { opacity: 0, filter: "blur(8px)" },
+      { opacity: 1, filter: "blur(0px)", duration: 0.2, ease: "power4.out" }, 1.25);
+    window.__timelines["endcard"] = tl;
+  </script>
+</template>
