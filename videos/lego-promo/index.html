@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="ko" data-composition-variables="[
+  {&quot;id&quot;:&quot;color-ground&quot;,&quot;type&quot;:&quot;color&quot;,&quot;label&quot;:&quot;배경&quot;,&quot;default&quot;:&quot;#FFFFFF&quot;},
+  {&quot;id&quot;:&quot;color-ink&quot;,&quot;type&quot;:&quot;color&quot;,&quot;label&quot;:&quot;글자&quot;,&quot;default&quot;:&quot;#171717&quot;},
+  {&quot;id&quot;:&quot;color-accent&quot;,&quot;type&quot;:&quot;color&quot;,&quot;label&quot;:&quot;강조 (출발 블루)&quot;,&quot;default&quot;:&quot;#2563EB&quot;}
+]">
+  <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=1920, height=1080">
+    <script src="https://cdn.jsdelivr.net/npm/gsap@3.15.0/dist/gsap.min.js"></script>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html,
+      body {
+        margin: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        background: #ffffff;
+      }
+      #root {
+        position: relative;
+        width: 100%;
+        height: 100%;
+      }
+      #bg {
+        position: absolute;
+        inset: 0;
+        background: var(--color-ground);
+      }
+    </style>
+  </head>
+  <body>
+    <div data-hf-id="hf-0xju" id="root" data-composition-id="main" data-start="0" data-duration="31" data-width="1920" data-height="1080">
+      <div data-hf-id="hf-gr6y" id="bg" class="clip" data-start="0" data-duration="31" data-track-index="0" data-no-timeline=""></div>
+
+      <!-- 놓친 열차 → 휴대폰 속 LeGo → 3D로 줌 스루 → 로고 타일 (한 번에 이어지는 장면) -->
+      <div data-hf-id="hf-wy12" id="stage" data-composition-id="stage" data-composition-src="compositions/stage.html" data-start="0" data-duration="27" data-track-index="1" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+
+      <div data-hf-id="hf-d1je" id="endcard" data-composition-id="endcard" data-composition-src="compositions/endcard.html" data-start="27" data-duration="4" data-track-index="2" data-track-kind="graphics" data-width="1920" data-height="1080"></div>
+
+      <div data-hf-id="hf-w8x4" id="captions" data-composition-id="captions" data-composition-src="compositions/captions.html" data-start="0" data-duration="31" data-track-index="3" data-track-kind="captions" data-width="1920" data-height="1080"></div>
+
+
+      <!-- 효과음: 피크가 화면보다 한 프레임 늦게 오도록 (피크 위치는 hyperframes audio로 측정) -->
+      <audio data-automation="{&quot;version&quot;:1,&quot;lanes&quot;:[{&quot;target&quot;:&quot;volume&quot;,&quot;points&quot;:[{&quot;t&quot;:0,&quot;v&quot;:0.8128305161640993},{&quot;t&quot;:2.4,&quot;v&quot;:0.8709635899560807}]}]}" data-hf-id="hf-smzu" id="sfx-zoomout" class="clip" src="assets/sfx/whoosh-cinematic.mp3" data-start="4.73" data-media-start="1.9" data-duration="2.4" data-volume="0.21" data-track-index="10"></audio>
+      <audio data-hf-id="hf-ufbb" id="sfx-tap-1" class="clip" src="assets/sfx/click-soft.mp3" data-start="6.96" data-duration="0.37" data-volume="0.24" data-track-index="11"></audio>
+      <audio data-hf-id="hf-21c1" id="sfx-key-1" class="clip" src="assets/sfx/key-press.mp3" data-start="7.26" data-duration="0.4" data-volume="0.21" data-track-index="12"></audio>
+      <audio data-hf-id="hf-9rgs" id="sfx-key-2" class="clip" src="assets/sfx/key-press.mp3" data-start="7.51" data-duration="0.4" data-volume="0.21" data-track-index="14"></audio>
+      <audio data-hf-id="hf-qpwx" id="sfx-tap-2" class="clip" src="assets/sfx/click-soft.mp3" data-start="8.26" data-duration="0.37" data-volume="0.24" data-track-index="11"></audio>
+      <audio data-hf-id="hf-17wy" id="sfx-tap-3" class="clip" src="assets/sfx/click-soft.mp3" data-start="9.56" data-duration="0.37" data-volume="0.24" data-track-index="11"></audio>
+      <audio data-hf-id="hf-ezoc" id="sfx-tap-4" class="clip" src="assets/sfx/click-soft.mp3" data-start="10.86" data-duration="0.37" data-volume="0.24" data-track-index="11"></audio>
+      <audio data-hf-id="hf-ybpa" id="sfx-tap-5" class="clip" src="assets/sfx/click-soft.mp3" data-start="13.06" data-duration="0.37" data-volume="0.24" data-track-index="11"></audio>
+      <audio data-hf-id="hf-m4kl" id="sfx-punch" class="clip" src="assets/sfx/whoosh-short.mp3" data-start="13.77" data-duration="0.58" data-volume="0.18" data-track-index="10"></audio>
+      <audio data-hf-id="hf-xfnt" id="sfx-go" class="clip" src="assets/sfx/pop.mp3" data-start="18.71" data-duration="0.72" data-volume="0.27" data-track-index="12"></audio>
+      <audio data-hf-id="hf-44do" id="sfx-through" class="clip" src="assets/sfx/whoosh.mp3" data-start="21.32" data-duration="0.58" data-volume="0.21" data-track-index="10"></audio>
+      <audio data-hf-id="hf-kemn" id="sfx-riser" class="clip" src="assets/sfx/riser.mp3" data-start="22.43" data-media-start="1.5" data-duration="2.1" data-volume="0.18" data-fade-in="0.4" data-track-index="13"></audio>
+      <audio data-hf-id="hf-gdfs" id="sfx-doors" class="clip" src="assets/sfx/impact-bass-1.mp3" data-start="24.46" data-duration="2.1" data-volume="0.24" data-track-index="15"></audio>
+      <audio data-hf-id="hf-ji3l" id="sfx-tile" class="clip" src="assets/sfx/whoosh-short.mp3" data-start="26.57" data-duration="0.58" data-volume="0.18" data-track-index="10"></audio>
+      <audio data-hf-id="hf-9hfe" id="sfx-logo" class="clip" src="assets/sfx/pop.mp3" data-start="27.16" data-duration="0.72" data-volume="0.24" data-track-index="12"></audio>
+    </div>
+    <script>
+      window.__timelines["main"] = gsap.timeline({ paused: true });
+    </script>
+  </body>
+</html>

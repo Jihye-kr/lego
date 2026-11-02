@@ -1,0 +1,8 @@
+# 렌더 결과·캐시 (최종본은 docs/lego-promo.mp4)
+renders/
+.media/
+.hyperframes/
+.thumbnails/
+.waveform-cache/
+# 쓰지 않기로 한 배경음악
+assets/bgm/
