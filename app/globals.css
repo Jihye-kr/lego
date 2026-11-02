@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* 디자인 시스템: https://claude.ai/artifact/MnxzsyrecB8B4t28qnwGf2 (토큰 · 픽토그램)
-   크기 12·14·16·20·28·76 / 모서리 태그 8·컨트롤 12·카드 16 / 그림자는 출발 보드 한 곳 */
+   크기 12·14·16·20·28·56 / 모서리 태그 8·컨트롤 12·카드 16 / 그림자는 출발 보드 한 곳 */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -14,10 +14,8 @@
   --color-line-text: var(--line-text);
   --color-go: var(--go);
   --color-go-soft: var(--go-soft);
-  --color-go-bar: var(--go-bar);
   --color-run: var(--run);
   --color-run-soft: var(--run-soft);
-  --color-track: var(--track);
   --color-disabled: var(--fg-disabled);
   --font-sans: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   --font-heading: var(--font-sans);
@@ -49,11 +47,11 @@
 
 :root {
   --background: #ffffff; /* bg */
-  --foreground: #171717; /* fg */
+  --foreground: #404040; /* fg (#171717·#262626은 너무 무거워 연하게, 흰 배경 10.4:1) */
   --card: #ffffff;
-  --card-foreground: #171717;
+  --card-foreground: #404040;
   --popover: #ffffff;
-  --popover-foreground: #171717;
+  --popover-foreground: #404040;
   --primary: #262626; /* 주 버튼 */
   --primary-foreground: #ffffff;
   --secondary: #f5f5f5;
@@ -62,16 +60,14 @@
   --muted-foreground: #525252; /* fg-muted 7.8:1 */
   --fg-disabled: #737373; /* 못 타는 열차 4.7:1, 문구와 함께 */
   --accent: #f5f5f5;
-  --accent-foreground: #171717;
+  --accent-foreground: #404040;
   --destructive: #c2410c;
   --border: #e5e5e5;
   --input: #e5e5e5;
   --ring: #2563eb; /* focus */
-  --track: #f0f0f0;
   /* 강조색은 지금 출발·뛰면 가능 두 곳에만 */
   --go: #2563eb;
   --go-soft: #eff6ff;
-  --go-bar: #3b82f6;
   --run: #c2410c;
   --run-soft: #fff7ed;
 }
@@ -121,6 +117,14 @@
 @keyframes pg-leave { 0%, 30% { transform: translateX(0); opacity: 1; } 85% { transform: translateX(8px); opacity: 0; } 100% { opacity: 0; } }
 @media (prefers-reduced-motion: reduce) {
   .pg * { animation: none !important; }
+}
+
+/* 상태가 바뀔 때 공통 등장 모션: 다음 열차 목록 열고 닫기와 같은 300ms ease-out.
+   --enter-x / --enter-y로 들어오는 방향을 바꾼다 (단계 화면: 앞으로 가면 오른쪽에서, 뒤로 가면 왼쪽에서) */
+@keyframes enter { from { opacity: 0; transform: translate(var(--enter-x, 0), var(--enter-y, 4px)); } }
+@utility animate-enter {
+  animation: enter 300ms ease-out; /* fill 없이: 끝나면 transform이 남지 않는다 */
+  @media (prefers-reduced-motion: reduce) { animation: none; }
 }
 
 /* 분 휠: 스크롤바 숨김 (스크롤·키보드로 조작) */

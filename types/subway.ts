@@ -4,6 +4,7 @@ export type RawArrival = {
   updnLine: string;
   trainLineNm: string;
   statnId: string;
+  statnFid: string; // 열차가 지나오는 바로 전 역 ID
   statnNm: string;
   subwayList: string; // 환승 노선 subwayId, 쉼표 구분 예: "1001,1004,1063,1065"
   btrainNo: string;
@@ -38,6 +39,7 @@ export type Arrival = {
   message: string; // 원본 도착 메시지
   location: string; // 열차가 지금 있는 역 (arvlMsg3)
   stopsAway?: number; // location이 이번 역에서 몇 역 전인지 (메시지로 알 수 있을 때만: 0 = 이번 역)
+  previousStations: (string | undefined)[]; // 열차가 지나오는 쪽 역 이름 [전역, 전전역, 3역 전]. 모르면 undefined (1~9호선만)
   isExpress: boolean;
   isLastTrain: boolean;
 };

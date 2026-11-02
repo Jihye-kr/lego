@@ -15,7 +15,7 @@ function live(trainNo: string, secondsLeft: number, overrides: Partial<Arrival> 
   return {
     trainNo, subwayId: "1002", line: "2호선", direction: "내선", destination: "성수행", towards: "교대방면",
     secondsLeft, arrivalAt: NOW + secondsLeft * 1000, isEstimated: false, message: "", location: "",
-    isExpress: false, isLastTrain: false, ...overrides,
+    previousStations: [], isExpress: false, isLastTrain: false, ...overrides,
   };
 }
 

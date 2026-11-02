@@ -1,5 +1,6 @@
 import type { Arrival, RawArrival, RawArrivalResponse } from "../../types/subway";
 import { getLine } from "../lines";
+import { previousStations } from "./stations";
 
 // ponytail: 역간 평균 2분 가정. 노선별 역간 시간표가 생기면 교체
 export const SECONDS_PER_STATION = 120;
@@ -60,6 +61,7 @@ export function parseArrivals(raw: RawArrivalResponse, now: number): Arrival[] {
       message: row.arvlMsg2,
       location: row.arvlMsg3,
       stopsAway: stopsAway(row.arvlMsg2),
+      previousStations: previousStations(row.statnId, row.statnFid, 3),
       isExpress: /급행|특급|ITX/.test(row.btrainSttus + row.trainLineNm),
       isLastTrain: row.lstcarAt === "1",
     });

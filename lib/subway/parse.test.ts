@@ -13,7 +13,7 @@ function row(overrides: Partial<RawArrival>): RawArrivalResponse {
   return {
     realtimeArrivalList: [
       {
-        subwayId: "1002", updnLine: "내선", trainLineNm: "성수행 - 교대방면", statnId: "", statnNm: "강남",
+        subwayId: "1002", updnLine: "내선", trainLineNm: "성수행 - 교대방면", statnId: "", statnFid: "", statnNm: "강남",
         subwayList: "1002", btrainNo: "2001", btrainSttus: "일반", bstatnNm: "성수", barvlDt: "240",
         recptnDt: "2026-10-31 12:00:00", arvlMsg2: "4분 후", arvlMsg3: "", arvlCd: "99", lstcarAt: "0",
         ...overrides,

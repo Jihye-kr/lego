@@ -1,6 +1,17 @@
 import { describe, expect, it } from "vitest";
 import type { Arrival } from "../../types/subway";
-import { APPROACH_SECONDS, DWELL_SECONDS, EXIT_SECONDS, FAR_SECONDS, doorOpenness, pickSceneTrain, trainMotion } from "./motion";
+import {
+  APPROACH_SECONDS,
+  DWELL_SECONDS,
+  EXIT_SECONDS,
+  FAR_SECONDS,
+  HIDDEN_PROGRESS,
+  type SceneTrain,
+  doorOpenness,
+  pickSceneTrain,
+  stepScene,
+  trainMotion,
+} from "./motion";
 
 describe("trainMotion", () => {
   it("아주 멀리 있으면 숨김, 진입 전 FAR 구간은 터널 안에서 등속으로 다가온다", () => {
@@ -71,5 +82,59 @@ describe("doorOpenness", () => {
     expect(doorOpenness(-10)).toBe(1);
     expect(doorOpenness(-(DWELL_SECONDS - 1.5))).toBe(0);
     expect(doorOpenness(-DWELL_SECONDS - 1)).toBe(0);
+  });
+});
+
+describe("stepScene", () => {
+  const DT = 1 / 30;
+  const GAP = 0.3;
+  // live(시각) 를 주며 seconds초 동안 프레임을 돌린다. 매 프레임 이전 위치를 기록
+  function run(scene: SceneTrain[], start: number, seconds: number, live: (now: number) => { key: string; arrivalAt: number }[]) {
+    const ps: number[][] = [];
+    let now = start;
+    for (let i = 0; i < seconds / DT; i++) {
+      now += DT * 1000;
+      scene = stepScene(scene, live(now), now, DT, GAP, false);
+      ps.push(scene.map((s) => s.p));
+    }
+    return { scene, now, ps };
+  }
+
+  it("처음 그릴 때는 데이터 위치에 놓는다", () => {
+    const [s] = stepScene([], [{ key: "a", arrivalAt: 10_000 }], 0, DT, GAP, true);
+    expect(s.p).toBeCloseTo(trainMotion(10).progress);
+  });
+
+  it("도착이 늦춰져도 뒤로 가지 않고, 천천히 다가가 새 도착 시각에 정차한다", () => {
+    let scene = stepScene([], [{ key: "a", arrivalAt: 10_000 }], 0, DT, GAP, true);
+    const before = scene[0].p;
+    // 폴링 결과 도착이 30초 뒤로 밀림
+    const r = run(scene, 0, 31, () => [{ key: "a", arrivalAt: 30_000 }]);
+    scene = r.scene;
+    let last = before;
+    for (const [p] of r.ps) {
+      expect(p).toBeGreaterThanOrEqual(last);
+      last = p;
+    }
+    expect(scene[0].p).toBeGreaterThan(before);
+    expect(scene[0].stoppedAt).toBeGreaterThan(28_000); // 새 도착 시각(30초) 즈음에 선다
+  });
+
+  it("정차한 뒤 목록에서 빠져도 정차·출발을 마치고 사라진다", () => {
+    let scene = stepScene([], [{ key: "a", arrivalAt: 0 }], 0, DT, GAP, true);
+    expect(scene[0].stoppedAt).toBe(0);
+    scene = run(scene, 0, DWELL_SECONDS + 1, () => []).scene;
+    expect(scene[0].p).toBeGreaterThan(0.5); // 떠나는 중
+    expect(run(scene, (DWELL_SECONDS + 1) * 1000, EXIT_SECONDS, () => []).scene).toEqual([]);
+  });
+
+  it("보는 중에 새로 잡힌 열차는 터널에서 나오고, 앞 열차를 추월하지 않는다", () => {
+    const scene = stepScene([], [{ key: "a", arrivalAt: -5_000 }], 0, DT, GAP, true); // 정차 중
+    const r = run(scene, 0, 10, () => [
+      { key: "a", arrivalAt: -5_000 },
+      { key: "b", arrivalAt: 3_000 }, // 데이터상 곧 도착
+    ]);
+    expect(r.ps[0][1]).toBeCloseTo(HIDDEN_PROGRESS, 1);
+    for (const [a, b] of r.ps) if (b !== undefined) expect(b).toBeLessThanOrEqual(a - GAP + 1e-9);
   });
 });

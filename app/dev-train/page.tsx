@@ -38,10 +38,7 @@ function Demo() {
           color={getLine(line).color}
           stationName={new URLSearchParams(window.location.search).get("station") ?? "시청"}
           lineName={getLine(line).name}
-          arrivalAt={loop.arrivalAt}
-          trainKey={String(loop.n)}
-          destination="성수행"
-          trainNo="2148"
+          trains={[{ key: String(loop.n), arrivalAt: loop.arrivalAt, destination: "성수행", trainNo: "2148" }]}
         />
       </div>
       <p className="text-sm text-muted-foreground">

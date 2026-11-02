@@ -44,3 +44,90 @@ export function pickSceneTrain(arrivals: Arrival[], now: number): Arrival | unde
   }
   return best;
 }
+
+// ── 씬 속 열차들: 승강장을 비추는 화면이라 열차는 절대 뒤로 가지 않고, 정차 후엔 데이터와 상관없이 떠난다 ──
+
+export const HIDDEN_PROGRESS = -FAR_SECONDS / APPROACH_SECONDS; // 터널 깊숙이 (불빛도 안 보임)
+const CATCH_UP = 6; // 도착이 당겨졌을 때 예정 위치를 따라잡는 속도 (1/s)
+const MAX_CATCH_UP_SPEED = 0.1; // 따라잡을 때 최고 속도 (progress/s, 진입 시작 속도의 2배)
+const STOP_EPSILON = 1e-4; // 약 1.6cm
+
+// p = progress. stoppedAt = 정차 위치에 선 시각(ms). 그 뒤 정차·출발은 이 시각만으로 진행
+export type SceneTrain = { key: string; arrivalAt: number; p: number; stoppedAt?: number };
+
+const toStop = (t: number) => 0.5 - Math.min(trainMotion(t).progress, 0.5); // 데이터상 정차 위치까지 남은 거리
+
+// fromTunnel: 화면을 보는 중에 새로 잡힌 열차는 터널에서 나오게 (갑자기 나타나지 않게)
+function enter(key: string, arrivalAt: number, now: number, fromTunnel: boolean): SceneTrain | undefined {
+  const t = (arrivalAt - now) / 1000;
+  if (fromTunnel) return { key, arrivalAt, p: Math.min(trainMotion(t).progress, HIDDEN_PROGRESS) };
+  if (t > 0) return { key, arrivalAt, p: trainMotion(t).progress };
+  if (t < -(DWELL_SECONDS + EXIT_SECONDS)) return undefined;
+  return { key, arrivalAt, p: trainMotion(t).progress, stoppedAt: arrivalAt };
+}
+
+// minDistance: 앞 열차 때문에 더 못 가는 정차 위치까지의 거리 (추월 금지)
+function step(s: SceneTrain, now: number, dt: number, minDistance: number): SceneTrain {
+  if (s.stoppedAt !== undefined) return { ...s, p: trainMotion((s.stoppedAt - now) / 1000).progress };
+  const t = (s.arrivalAt - now) / 1000;
+  const d = 0.5 - s.p;
+  const target = toStop(t);
+  let next = d;
+  if (d < target) {
+    // 예정보다 앞서 있다(도착이 늦춰짐) → 뒤로 가지 않고 감속하며 새 도착 시각에 정차 위치에 닿게
+    next = t > 0 ? d * (t / (t + dt)) ** 2 : 0;
+  } else {
+    // 예정보다 뒤처졌다(도착이 당겨짐) → 부드럽게 따라잡되 최고 속도는 제한
+    next = d - Math.min((d - target) * (1 - Math.exp(-dt * CATCH_UP)), MAX_CATCH_UP_SPEED * dt);
+  }
+  next = Math.min(d, Math.max(next, minDistance));
+  return next <= STOP_EPSILON ? { ...s, p: 0.5, stoppedAt: now } : { ...s, p: 0.5 - next };
+}
+
+export function isGone(s: SceneTrain, now: number) {
+  return s.stoppedAt !== undefined && trainMotion((s.stoppedAt - now) / 1000).phase === "hidden";
+}
+
+export function sceneDoors(s: SceneTrain, now: number) {
+  return s.stoppedAt === undefined ? 0 : doorOpenness((s.stoppedAt - now) / 1000);
+}
+
+// 다음 프레임이 필요한가 (정차해 문이 다 열려 있거나 터널 깊숙이 기다리는 중엔 렌더 0)
+export function isAnimating(s: SceneTrain, now: number) {
+  if (s.stoppedAt === undefined) return s.p > HIDDEN_PROGRESS || (s.arrivalAt - now) / 1000 <= APPROACH_SECONDS + FAR_SECONDS;
+  const t = (s.stoppedAt - now) / 1000;
+  const doors = doorOpenness(t);
+  return trainMotion(t).phase === "departing" || (doors > 0 && doors < 1);
+}
+
+// 실시간 목록 → 씬 열차 목록. 목록에서 빠진 열차도 이미 보이면 마지막 예정대로 들어와 떠난다
+// gap: 열차 한 대 길이(progress 단위). first: 화면을 처음 그릴 때는 데이터 위치에 바로 놓는다
+export function stepScene(
+  prev: SceneTrain[],
+  live: { key: string; arrivalAt: number }[],
+  now: number,
+  dt: number,
+  gap: number,
+  first: boolean,
+): SceneTrain[] {
+  const byKey = new Map(prev.map((s) => [s.key, s]));
+  const merged: SceneTrain[] = [];
+  for (const { key, arrivalAt } of live) {
+    const old = byKey.get(key);
+    byKey.delete(key);
+    const s = old ? { ...old, arrivalAt } : enter(key, arrivalAt, now, !first);
+    if (s) merged.push(s);
+  }
+  for (const s of byKey.values()) if (s.stoppedAt !== undefined || s.p > HIDDEN_PROGRESS) merged.push(s);
+
+  merged.sort((a, b) => b.p - a.p); // 앞 열차부터
+  const out: SceneTrain[] = [];
+  let leader: SceneTrain | undefined;
+  for (const s of merged) {
+    const next = step(s, now, dt, leader ? 0.5 - (leader.p - gap) : -Infinity);
+    if (isGone(next, now)) continue;
+    out.push(next);
+    leader = next;
+  }
+  return out;
+}

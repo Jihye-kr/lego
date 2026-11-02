@@ -35,7 +35,15 @@
 
 ## 설치 및 실행
 
-**요구 사항**: Node.js 20 이상, [서울 열린데이터광장](https://data.seoul.go.kr) 지하철 실시간 도착 API 키
+**요구 사항**: Node.js 20 이상, 서울 열린데이터광장 실시간 지하철 인증키
+
+### 1. API 인증키 발급
+
+1. [서울 열린데이터광장](https://data.seoul.go.kr)에 회원가입 후 로그인합니다.
+2. [인증키 신청 페이지](https://data.seoul.go.kr/together/mypage/actkeyMain.do)에서 **'실시간 지하철 인증키 신청'** 버튼을 눌러 신청합니다.
+3. 발급된 키 하나로 실시간 도착 정보와 열차 시간표를 모두 조회합니다.
+
+### 2. 설치 및 실행
 
 ```bash
 git clone https://github.com/Jihye-kr/lego.git
@@ -47,6 +55,8 @@ echo "SEOUL_SUBWAY_API_KEY=발급받은_키" > .env.local
 
 npm run dev        # http://localhost:3000
 ```
+
+배포할 때는 Vercel 프로젝트의 **Settings → Environment Variables**에 `SEOUL_SUBWAY_API_KEY`를 같은 값으로 추가한 뒤 다시 배포합니다.
 
 | 명령어 | 설명 |
 |---|---|

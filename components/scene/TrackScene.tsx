@@ -1,10 +1,18 @@
 "use client";
 
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
-import { useEffect, useLayoutEffect, useMemo, useRef } from "react";
-import { Object3D, type Group, type InstancedMesh, type Texture } from "three";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { MathUtils, Object3D, type Group, type InstancedMesh, type PerspectiveCamera, type Texture } from "three";
 import { lineShortLabel, textColorOn } from "@/lib/lines";
-import { doorOpenness, trainMotion } from "@/lib/scene/motion";
+import {
+  APPROACH_SECONDS,
+  FAR_SECONDS,
+  HIDDEN_PROGRESS,
+  type SceneTrain,
+  isAnimating,
+  sceneDoors,
+  stepScene,
+} from "@/lib/scene/motion";
 import { englishStationName } from "@/lib/subway/english";
 import { SIGN_ASPECT, roundedPrism, stationSignTexture, tileTexture } from "./shapes";
 import { TRAIN_LENGTH, Train } from "./Train";
@@ -206,20 +214,9 @@ function Station({ color, stationName, lineName }: StationProps) {
 
 // progress 0 → 선두가 터널 입구, 0.5 → 승강장 중앙 정차, 1 → 꼬리가 반대편 끝을 지남
 const X_RANGE = TRACK_LENGTH / 2 + TRAIN_LENGTH / 2;
-const SMOOTHING = 6; // 목표 위치를 따라가는 속도 (1/s). 폴링으로 도착 시각이 바뀌어도 순간이동하지 않게
-
-function target(arrivalAt: number | undefined, now: number) {
-  if (arrivalAt === undefined) return { visible: false, moving: false, x: -X_RANGE, doors: 0 };
-  const t = (arrivalAt - now) / 1000;
-  const { phase, progress } = trainMotion(t);
-  const doors = doorOpenness(t);
-  return {
-    visible: phase !== "hidden",
-    moving: phase === "approaching" || phase === "departing" || (doors > 0 && doors < 1),
-    x: (progress - 0.5) * 2 * X_RANGE,
-    doors,
-  };
-}
+const GAP = (TRAIN_LENGTH + 4) / (2 * X_RANGE); // 앞 열차와 최소 4m 떨어져 따라온다 (progress 단위)
+const MAX_DT = 0.25; // 오래 쉬었다 깨어난 첫 프레임에 한 번에 많이 움직이지 않게
+const toX = (p: number) => (p - 0.5) * 2 * X_RANGE;
 
 // 문짝 group의 원점이 바깥쪽 끝이라 scale.x를 줄이면 문 주머니로 들어간다 (Train.tsx)
 function setDoors(train: Group, open: number) {
@@ -229,78 +226,102 @@ function setDoors(train: Group, open: number) {
   }
 }
 
-type Shown = { x: number; visible: boolean; doors: number; key?: string };
+export type SceneTrainInfo = { key: string; arrivalAt: number; destination: string; trainNo: string };
 
-// 움직이거나 목표에 덜 도달했을 때만 다음 프레임이 필요 → 정차(문 다 열림)·대기 중엔 렌더 0
-function needsFrame(arrivalAt: number | undefined, shown: Shown) {
-  const t = target(arrivalAt, Date.now());
-  return t.moving || t.visible !== shown.visible || Math.abs(t.x - shown.x) > 0.01 || Math.abs(t.doors - shown.doors) > 0.01;
-}
-
-type TrainLabels = { lineLabel: string; destination: string; trainNo: string };
-
-function MovingTrain({ color, arrivalAt, trainKey, labels }: { color: string; arrivalAt?: number; trainKey?: string; labels: TrainLabels }) {
-  const ref = useRef<Group>(null);
-  const shown = useRef<Shown>({ x: -X_RANGE, visible: false, doors: 0, key: trainKey });
+// 승강장을 비추는 화면: 이 방면 열차를 모두 그린다. 열차는 뒤로 가지 않고, 정차 후엔 목록에서 빠져도 떠날 때까지 그린다
+function Trains({ color, lineLabel, trains }: { color: string; lineLabel: string; trains: SceneTrainInfo[] }) {
   const invalidate = useThree((s) => s.invalidate);
+  const live = useRef(trains);
+  const info = useRef(new Map<string, SceneTrainInfo>()); // 목록에서 빠져 떠나는 열차의 표시기 글자도 유지
+  const scene = useRef<SceneTrain[] | null>(null); // null = 데이터를 아직 못 받음 → 처음 받은 위치에 바로 놓는다
+  const groups = useRef(new Map<string, Group>());
+  const [shown, setShown] = useState<SceneTrainInfo[]>([]);
+  const shownKeys = useRef("");
 
-  // Train의 문짝 group (userData.door) — 매 프레임 찾지 않게 한 번만 모아 열차 group에 달아 둔다
-  useLayoutEffect(() => {
-    const leaves: Object3D[] = [];
-    ref.current!.traverse((o) => o.userData.door && leaves.push(o));
-    ref.current!.userData.doorLeaves = leaves;
-  }, []);
-
-  // 데이터가 바뀌거나, 대기 중에 진입/출발 시각이 되면 루프를 깨운다
+  // 움직이는 열차가 있거나, 대기 중에 데이터상 진입 시각이 되면 루프를 깨운다
   useEffect(() => {
-    invalidate();
-    const id = setInterval(() => needsFrame(arrivalAt, shown.current) && invalidate(), 1000);
+    live.current = trains;
+    for (const t of trains) info.current.set(t.key, t);
+    const wake = () => {
+      const now = Date.now();
+      const near = live.current.some((t) => (t.arrivalAt - now) / 1000 <= APPROACH_SECONDS + FAR_SECONDS);
+      if (near || scene.current?.some((s) => isAnimating(s, now))) invalidate();
+    };
+    wake();
+    const id = setInterval(wake, 1000);
     return () => clearInterval(id);
-  }, [arrivalAt, trainKey, invalidate]);
+  }, [trains, invalidate]);
 
   useFrame((_, delta) => {
-    const t = target(arrivalAt, Date.now());
-    const s = shown.current;
-    // 다른 열차로 바뀌거나 화면에 나타나는/사라지는 순간은 보간 없이 바로 이동
-    const k = 1 - Math.exp(-delta * SMOOTHING);
-    if (!t.visible || !s.visible || s.key !== trainKey) {
-      s.x = t.x;
-      s.doors = t.doors;
-    } else {
-      s.x += (t.x - s.x) * k;
-      s.doors += (t.doors - s.doors) * k;
+    const now = Date.now();
+    if (scene.current === null && live.current.length === 0) return;
+    const next = stepScene(scene.current ?? [], live.current, now, Math.min(delta, MAX_DT), GAP, scene.current === null);
+    scene.current = next;
+    const visible = next.filter((s) => s.p > HIDDEN_PROGRESS);
+    const keys = visible.map((s) => s.key).join();
+    if (keys !== shownKeys.current) {
+      shownKeys.current = keys;
+      setShown(visible.map((s) => info.current.get(s.key)!));
     }
-    s.visible = t.visible;
-    s.key = trainKey;
-    ref.current!.position.x = s.x;
-    setDoors(ref.current!, s.doors);
-    ref.current!.visible = t.visible;
-    if (needsFrame(arrivalAt, s)) invalidate();
+    for (const s of visible) {
+      const g = groups.current.get(s.key);
+      if (!g) continue; // 다음 렌더에 붙는다
+      g.position.x = toX(s.p);
+      setDoors(g, sceneDoors(s, now));
+      g.visible = true;
+    }
+    if (next.some((s) => isAnimating(s, now))) invalidate();
   });
 
-  return (
-    <group ref={ref} visible={false}>
-      <Train color={color} {...labels} />
+  return shown.map((t) => (
+    <group
+      key={t.key}
+      visible={false}
+      ref={(g) => {
+        if (!g) return void groups.current.delete(t.key);
+        // Train의 문짝 group (userData.door) — 매 프레임 찾지 않게 한 번만 모아 열차 group에 달아 둔다
+        const leaves: Object3D[] = [];
+        g.traverse((o) => o.userData.door && leaves.push(o));
+        g.userData.doorLeaves = leaves;
+        groups.current.set(t.key, g);
+        invalidate();
+      }}
+    >
+      <Train color={color} lineLabel={lineLabel} destination={t.destination} trainNo={t.trainNo} />
     </group>
-  );
+  ));
 }
 
-// destination·trainNo = 씬에 그리는 열차의 행선지("성수행")와 차량번호 (전면 표시기·차체 번호)
-type TrackSceneProps = StationProps & { arrivalAt?: number; trainKey?: string; destination?: string; trainNo?: string };
+const FOV = 55; // 4:3 기준 세로 시야각
+// 화면이 4:3보다 세로로 길어지면(남는 높이를 채울 때) 가로 시야가 4:3과 같도록 세로 시야를 넓힌다 → 열차가 좌우로 잘리지 않는다
+function FitFov() {
+  const aspect = useThree((s) => s.size.width / s.size.height);
+  const get = useThree((s) => s.get);
+  useEffect(() => {
+    const { camera: c, invalidate } = get();
+    const camera = c as PerspectiveCamera;
+    const half = MathUtils.degToRad(FOV / 2);
+    camera.fov = aspect >= 4 / 3 ? FOV : MathUtils.radToDeg(2 * Math.atan((Math.tan(half) * (4 / 3)) / aspect));
+    camera.updateProjectionMatrix();
+    invalidate();
+  }, [aspect, get]);
+  return null;
+}
 
-export function TrackScene({ color, stationName, lineName, arrivalAt, trainKey, destination, trainNo }: TrackSceneProps) {
-  const labels = { lineLabel: lineShortLabel(lineName), destination: destination || lineName, trainNo: trainNo ?? "" };
+// trains = 이 방면 실시간 열차 (destination·trainNo는 전면 표시기·차체 번호)
+export function TrackScene({ color, stationName, lineName, trains }: StationProps & { trains: SceneTrainInfo[] }) {
   return (
     <Canvas
       // 필요할 때만 렌더. 탭이 비활성이면 requestAnimationFrame이 멈춰 렌더도 멈춘다
       frameloop="demand"
       dpr={[1, 2]}
       // 승강장에 선 사람 눈높이(바닥 + 1.6m)에서 정차 위치의 열차를 비스듬히 바라본다. 터널은 오른쪽 안쪽
-      camera={{ position: [-11, PLATFORM.top + 1.6, 5.2], fov: 55, near: 0.3, far: 200 }}
+      camera={{ position: [-11, PLATFORM.top + 1.6, 5.2], fov: FOV, near: 0.3, far: 200 }}
       onCreated={({ camera }) => camera.lookAt(1.5, 2.0, -0.5)}
       fallback={<p className="p-4 text-sm text-muted-foreground">3D를 표시할 수 없어요</p>}
       aria-hidden
     >
+      <FitFov />
       <color attach="background" args={[BG]} />
       {/* 안개: 터널 깊숙한 곳은 어둠 속에 묻히고 열차 전조등·터널 등만 보인다 */}
       <fog attach="fog" args={[BG, 30, 80]} />
@@ -311,7 +332,7 @@ export function TrackScene({ color, stationName, lineName, arrivalAt, trainKey, 
       <group scale={[-1, 1, 1]}>
         <Tracks />
         <Station color={color} stationName={stationName} lineName={lineName} />
-        <MovingTrain color={color} arrivalAt={arrivalAt} trainKey={trainKey} labels={labels} />
+        <Trains color={color} lineLabel={lineShortLabel(lineName)} trains={trains} />
       </group>
     </Canvas>
   );

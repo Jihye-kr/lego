@@ -1,7 +1,7 @@
 "use client";
 
 import { ArrowDown, ArrowRight, ArrowUp, ChevronLeft, ChevronRight, RotateCcw, RotateCw, Search, TrainFront } from "lucide-react";
-import { useLayoutEffect, useRef, useState, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type CSSProperties, type FormEvent, type KeyboardEvent, type ReactNode } from "react";
 import { LineBadge } from "@/components/LineBadge";
 import { useArrivals } from "@/hooks/useArrivals";
 import { usePrefersReducedMotion } from "@/hooks/usePrefersReducedMotion";
@@ -12,9 +12,15 @@ import { searchStations } from "@/lib/subway/search";
 import { timetableLineNum } from "@/lib/subway/timetable";
 
 const STEPS = 4;
+// 단계마다 SetupProgress가 새로 마운트되므로, 막대가 이전 단계 길이에서 이어지도록 마지막 단계를 모듈에 기억한다
+let lastStep = 0;
 
 // 진행 막대 + "4단계 중 n단계". 뒤로 가기가 없는 1단계도 같은 자리를 비워 막대 길이를 맞춘다
 function SetupProgress({ step, onBack }: { step: number; onBack?: () => void }) {
+  const [from] = useState(() => lastStep);
+  useEffect(() => {
+    lastStep = step;
+  }, [step]);
   return (
     <nav aria-label="설정 단계" className="flex flex-col items-center gap-3 pb-2">
       <div className="flex w-full items-center gap-2">
@@ -38,7 +44,11 @@ function SetupProgress({ step, onBack }: { step: number; onBack?: () => void }) 
           aria-valuetext={`${STEPS}단계 중 ${step}단계`}
           className="h-1.5 flex-1 overflow-hidden rounded-full bg-border"
         >
-          <div className="h-full rounded-full bg-foreground" style={{ width: `${(step / STEPS) * 100}%` }} />
+          {/* starting: = @starting-style. 인라인 width보다 우선하도록 ! */}
+          <div
+            className="h-full rounded-full bg-foreground transition-[width] duration-300 ease-out starting:w-(--from)! motion-reduce:transition-none"
+            style={{ width: `${(step / STEPS) * 100}%`, "--from": `${(from / STEPS) * 100}%` } as CSSProperties}
+          />
         </div>
         <span aria-hidden className="w-[34px] shrink-0" />
       </div>
